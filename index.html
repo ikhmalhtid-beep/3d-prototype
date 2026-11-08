@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#292d32">
+<title>My3D 0.3</title>
+<style>
+:root{--chrome:#30343a;--chrome2:#41474f;--line:#202429;--text:#f2f3f4;--muted:#b9c0c8;--canvas:#e4e9ec}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;font:13px Arial,system-ui,sans-serif;background:var(--chrome);color:var(--text)}
+button,input{font:inherit}button{color:inherit;border:1px solid #20252b;background:linear-gradient(#515860,#3d444c);border-radius:4px;min-width:34px;height:32px;padding:0 8px}
+button:active,button.active{background:#235f91;border-color:#8bc5f2}
+#app{height:100dvh;display:flex;flex-direction:column}
+#titlebar{height:30px;display:flex;align-items:center;gap:12px;padding:0 10px;background:#25292e;border-bottom:1px solid #171a1e;flex-shrink:0}
+.logo{font-weight:bold}.logo b{color:#8dc7f2}.filetitle{color:#d5d9dd}
+#menubar{height:32px;display:flex;align-items:center;padding:0 7px;background:#343940;border-bottom:1px solid #1e2227;flex-shrink:0}
+#menubar button{height:27px;background:transparent;border:0;min-width:auto;padding:0 9px}
+#toolbar{display:flex;align-items:center;gap:5px;padding:5px 7px;background:#41474f;border-bottom:1px solid #22272d;overflow-x:auto;flex-shrink:0}
+.group{display:flex;gap:4px;padding-right:7px;margin-right:3px;border-right:1px solid #626970}
+#layout{display:flex;flex:1;min-height:0}
+#lefttools{width:46px;background:#343a41;border-right:1px solid #22272d;display:flex;flex-direction:column;gap:5px;padding:7px 5px;overflow:auto;flex-shrink:0}
+#lefttools button{width:35px;height:35px;padding:0;font-size:16px}
+#viewport{position:relative;flex:1;min-width:0;background:var(--canvas);touch-action:none}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+#hint{position:absolute;left:9px;top:9px;color:#34414b;background:#ffffffdf;border:1px solid #aeb9c2;border-radius:4px;padding:6px 8px;font-size:11px;pointer-events:none;max-width:calc(100% - 18px)}
+#tray{width:174px;background:#363c43;border-left:1px solid #22272d;overflow:auto;flex-shrink:0}
+.trayhead{padding:10px;background:#292e34;font-weight:bold}
+.traysection{padding:10px;border-bottom:1px solid #252a30}
+.traysection label{display:block;color:#d3d8de;margin:0 0 5px;font-size:11px}
+.traysection input{width:100%;padding:7px;background:#20252a;border:1px solid #59616a;border-radius:3px;color:white;margin-bottom:7px}
+.traysection button{width:100%;margin-top:4px}
+#statusbar{height:37px;display:flex;align-items:center;gap:8px;padding:4px 9px;background:#292e34;border-top:1px solid #171b20;flex-shrink:0}
+#status{flex:1;color:#d5dbe1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#measure{width:120px;background:#171b20;border:1px solid #626a73;color:#fff;border-radius:3px;padding:6px}
+@media(max-width:560px){#tray{display:none}#lefttools{width:42px}#menubar button{padding:0 6px;font-size:11px}}
+</style>
+</head>
+<body><div id="app">
+<div id="titlebar"><span class="logo"><b>MY</b>3D</span><span class="filetitle">Untitled Model</span><span style="margin-left:auto;color:#aeb7c0;font-size:11px">Prototype 0.3</span></div>
+<div id="menubar"><button>File</button><button>Edit</button><button>View</button><button>Camera</button><button>Draw</button><button>Tools</button><button>Window</button><button>Help</button></div>
+<div id="toolbar">
+ <div class="group"><button data-tool="select">↖ Select</button><button id="undo">↶ Undo</button><button id="redo">↷ Redo</button></div>
+ <div class="group"><button data-tool="rectangle">▭ Rectangle</button><button data-tool="line">╱ Line</button><button data-tool="pushpull">⬆ Push/Pull</button></div>
+ <div class="group"><button data-tool="move">✥ Move</button><button data-tool="eraser">⌫ Eraser</button></div>
+ <div class="group"><button data-tool="orbit">◉ Orbit</button><button data-tool="pan">✋ Pan</button><button data-tool="zoom">＋ Zoom</button></div>
+</div>
+<div id="layout">
+<aside id="lefttools">
+<button data-tool="select" title="Select">↖</button><button data-tool="rectangle" title="Rectangle">▭</button><button data-tool="line" title="Line">╱</button><button data-tool="pushpull" title="Push/Pull">⬆</button><button data-tool="move" title="Move">✥</button><button data-tool="eraser" title="Eraser">⌫</button><button data-tool="orbit" title="Orbit">◉</button><button data-tool="pan" title="Pan">✋</button>
+</aside>
+<section id="viewport"><canvas id="c"></canvas><div id="hint">Rectangle: drag to draw · Push/Pull: tap a face, drag, type height, press Enter · Orbit: drag</div></section>
+<aside id="tray"><div class="trayhead">Default Tray</div>
+<div class="traysection"><label>Entity Info</label><div id="entity" style="font-size:11px;color:#aeb8c2">No selection</div></div>
+<div class="traysection"><label>Measurements (mm)</label><label>Width</label><input id="w" type="number" value="100"><label>Depth</label><input id="d" type="number" value="100"><label>Height</label><input id="h" type="number" value="100"><button id="apply">Apply to selected</button></div>
+<div class="traysection"><label>Model</label><button id="delete">Delete selected</button><button id="save">Save in browser</button><button id="reset">Reset camera</button></div>
+<div class="traysection"><label>How to use</label><div style="font-size:11px;line-height:1.5;color:#c4ccd4">1. Rectangle: drag on the ground plane.<br>2. Push/Pull: tap the rectangle face, drag up/down, type a height and press Enter.<br>3. Move: drag a selected box.</div></div>
+</aside></div>
+<div id="statusbar"><span id="status">Ready · Units: millimeters</span><span style="font-size:10px;color:#b7c0c8">Measurements</span><input id="measure" placeholder="e.g. 1200,800" aria-label="Measurements"></div>
+</div>
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),view=document.getElementById('viewport'),$=id=>document.getElementById(id);
+let solids=[],selected=-1,tool='select',yaw=-.65,pitch=.55,zoom=2.1,panX=0,panY=0,history=[],redoStack=[],gesture=null,preview=null,pendingHeight=null;
+function say(s){$('status').textContent=s}
+function snapshot(){history.push(JSON.stringify(solids));if(history.length>50)history.shift();redoStack=[]}
+function resize(){let r=view.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=r.width*dpr;canvas.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);draw()}
+window.addEventListener('resize',resize);
+function project(x,y,z){let cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch),X=x*cy-z*sy,Z=x*sy+z*cy,Y=y*cp-Z*sp,V=y*sp+Z*cp,s=Math.min(view.clientWidth,view.clientHeight)*.006*zoom;return [view.clientWidth/2+panX+X*s,view.clientHeight*.56+panY-V*s]}
+function unprojectGround(px,py){let s=Math.min(view.clientWidth,view.clientHeight)*.006*zoom;let wx=(px-view.clientWidth/2-panX)/s,wz=(py-view.clientHeight*.56-panY)/s;return {x:wx*Math.cos(yaw)+wz*Math.sin(yaw),z:-wx*Math.sin(yaw)+wz*Math.cos(yaw)}}
+function boxVertices(o){let{x,z,w,d,h}=o,y=o.y||0;return [[x,y,z],[x+w,y,z],[x+w,y,z+d],[x,y,z+d],[x,y+h,z],[x+w,y+h,z],[x+w,y+h,z+d],[x,y+h,z+d]]}
+function drawSolid(o,i){let p=boxVertices(o).map(v=>project(...v));let faces=[{f:[0,1,5,4],c:'#91b4ca'},{f:[1,2,6,5],c:'#739bb7'},{f:[3,2,6,7],c:'#668da9'},{f:[4,5,6,7],c:'#b5cedc'},{f:[0,3,7,4],c:'#82a7c0'},{f:[0,1,2,3],c:'#d1dfe7'}];faces.forEach(a=>{ctx.beginPath();a.f.forEach((k,n)=>n?ctx.lineTo(...p[k]):ctx.moveTo(...p[k]));ctx.closePath();ctx.fillStyle=a.c;ctx.fill();ctx.strokeStyle=i===selected?'#e09a20':'#4b6679';ctx.lineWidth=i===selected?2.5:1;ctx.stroke()});if(i===selected){let q=project(o.x+o.w/2,o.y+o.h,o.z+o.d/2);ctx.fillStyle='#203746';ctx.font='12px Arial';ctx.fillText(`${o.w} × ${o.d} × ${o.h} mm`,q[0]+8,q[1]-8)}}
+function draw(){let W=view.clientWidth,H=view.clientHeight;ctx.clearRect(0,0,W,H);ctx.fillStyle='#e4e9ec';ctx.fillRect(0,0,W,H);
+for(let i=-1500;i<=1500;i+=100){let a=project(i,0,-1500),b=project(i,0,1500),c=project(-1500,0,i),d=project(1500,0,i);ctx.strokeStyle=i===0?'#8496a3':'#c8d1d7';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.moveTo(...c);ctx.lineTo(...d);ctx.stroke()}
+[[1200,0,0,'#c75c53'],[0,0,1200,'#4b86b8']].forEach(([x,y,z,col])=>{let a=project(0,0,0),b=project(x,y,z);ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke()});
+solids.forEach(drawSolid);
+if(preview&&preview.kind==='rect'){let p=[project(preview.x,0,preview.z),project(preview.x+preview.w,0,preview.z),project(preview.x+preview.w,0,preview.z+preview.d),project(preview.x,0,preview.z+preview.d)];ctx.beginPath();p.forEach((v,i)=>i?ctx.lineTo(...v):ctx.moveTo(...v));ctx.closePath();ctx.fillStyle='#5aa6d855';ctx.fill();ctx.strokeStyle='#1677b8';ctx.lineWidth=2;ctx.stroke()}
+if(preview&&preview.kind==='extrude'&&selected>=0){let o={...solids[selected],h:preview.h};drawSolid(o,selected)}
+}
+function setTool(t){tool=t;document.querySelectorAll('[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));let hints={rectangle:'Rectangle: drag on the ground plane to draw · type width,depth and press Enter',pushpull:'Push/Pull: tap a face, drag vertically, type height in mm and press Enter',move:'Move: select a solid, then drag it on the ground plane',orbit:'Orbit: drag to rotate view',pan:'Pan: drag to move view',select:'Select: tap a solid',line:'Line tool is a visual placeholder in 0.3',eraser:'Eraser: tap a solid to delete'};$('hint').textContent=hints[t]||'';say('Tool: '+t.toUpperCase())}
+document.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+function sync(){let o=solids[selected];$('entity').textContent=o?`Solid · ${o.w} × ${o.d} × ${o.h} mm`:'No selection';if(o){$('w').value=o.w;$('d').value=o.d;$('h').value=o.h}}
+function finishRect(){if(!preview)return;let p=preview;preview=null;if(p.w<5||p.d<5){draw();return}snapshot();solids.push({x:p.x,z:p.z,y:0,w:p.w,d:p.d,h:0,flat:true});selected=solids.length-1;sync();draw();say(`Rectangle created · ${Math.round(p.w)} × ${Math.round(p.d)} mm. Select Push/Pull to extrude.`)}
+function findSolid(px,py){for(let i=solids.length-1;i>=0;i--){let o=solids[i],pts=boxVertices(o).map(v=>project(...v));let xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);if(px>=Math.min(...xs)-10&&px<=Math.max(...xs)+10&&py>=Math.min(...ys)-10&&py<=Math.max(...ys)+10)return i}return -1}
+function applyHeight(v){if(selected<0)return;let n=Number(v);if(!Number.isFinite(n))return;snapshot();solids[selected].h=Math.max(0,n);solids[selected].flat=solids[selected].h===0;pendingHeight=null;preview=null;sync();draw();say(`Push/Pull applied · ${solids[selected].h} mm`)}
+function commitMeasure(){let v=$('measure').value.trim();if(!v)return;if(tool==='rectangle'&&preview){let a=v.split(',').map(Number);if(a.length>=2&&a.every(Number.isFinite)){preview.w=Math.abs(a[0]);preview.d=Math.abs(a[1]);finishRect()}else say('Rectangle measurement format: width,depth (e.g. 1200,800)')}else if(tool==='pushpull'&&selected>=0){applyHeight(v.replace(/[^\d.-]/g,''))}else if(tool==='move'&&selected>=0){let n=Number(v);if(Number.isFinite(n)){snapshot();solids[selected].x+=n;draw();say(`Moved ${n} mm along X`)}}}
+$('measure').addEventListener('keydown',e=>{if(e.key==='Enter'){commitMeasure();$('measure').blur()}if(e.key==='Escape'){preview=null;draw();say('Cancelled')}});
+function pointerPos(e){let r=canvas.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);let p=pointerPos(e);gesture={id:e.pointerId,start:p,last:p,moved:false,mode:tool};
+if(tool==='rectangle'){let g=unprojectGround(p.x,p.y);preview={kind:'rect',x:g.x,z:g.z,w:0,d:0};}
+else if(tool==='select'){selected=findSolid(p.x,p.y);sync();draw()}
+else if(tool==='eraser'){let i=findSolid(p.x,p.y);if(i>=0){snapshot();solids.splice(i,1);selected=-1;sync();draw();say('Solid erased')}}
+else if(tool==='pushpull'){selected=findSolid(p.x,p.y);sync();if(selected>=0){if(solids[selected].flat||solids[selected].h===0){pendingHeight=true;preview={kind:'extrude',h:0}}else{pendingHeight=true;preview={kind:'extrude',h:solids[selected].h}}say('Drag up/down to preview height, type exact mm in Measurements and press Enter')}}
+else if(tool==='move'&&selected>=0){let i=findSolid(p.x,p.y);if(i>=0)selected=i;let g=unprojectGround(p.x,p.y);gesture.origin=g;gesture.original={x:solids[selected].x,z:solids[selected].z};sync()}
+});
+canvas.addEventListener('pointermove',e=>{if(!gesture||gesture.id!==e.pointerId)return;let p=pointerPos(e),dx=p.x-gesture.last.x,dy=p.y-gesture.last.y;gesture.last=p;if(Math.hypot(p.x-gesture.start.x,p.y-gesture.start.y)>3)gesture.moved=true;
+if(tool==='orbit'){yaw+=dx*.009;pitch=Math.max(.12,Math.min(1.35,pitch-dy*.006))}
+else if(tool==='pan'){panX+=dx;panY+=dy}
+else if(tool==='rectangle'&&preview){let g=unprojectGround(p.x,p.y);preview.w=g.x-preview.x;preview.d=g.z-preview.z}
+else if(tool==='pushpull'&&pendingHeight&&selected>=0){let delta=(gesture.start.y-p.y)*2.2;preview={kind:'extrude',h:Math.max(0,Math.round((solids[selected].h||0)+delta))};$('measure').value=String(preview.h);say(`Push/Pull preview · ${preview.h} mm · press Enter to confirm`)}
+else if(tool==='move'&&gesture.origin&&selected>=0){let g=unprojectGround(p.x,p.y);solids[selected].x=gesture.original.x+(g.x-gesture.origin.x);solids[selected].z=gesture.original.z+(g.z-gesture.origin.z)}
+draw()});
+function pointerEnd(e){if(!gesture||gesture.id!==e.pointerId)return;
+if(tool==='rectangle'){if(gesture.moved)finishRect();else{preview=null;say('Drag across the workspace to draw a rectangle')}}
+else if(tool==='pushpull'&&pendingHeight&&selected>=0){let v=preview?preview.h:solids[selected].h;$('measure').value=String(v);say('Type exact height in Measurements, then press Enter')}
+else if(tool==='move'&&gesture.moved&&selected>=0){snapshot();say('Move complete')}
+gesture=null}
+canvas.addEventListener('pointerup',pointerEnd);canvas.addEventListener('pointercancel',pointerEnd);
+canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.45,Math.min(6,zoom*(e.deltaY<0?1.1:.9)));draw()},{passive:false});
+$('apply').onclick=()=>{if(selected<0){say('Select a solid first');return}let w=Math.max(1,Number($('w').value)||100),d=Math.max(1,Number($('d').value)||100),h=Math.max(0,Number($('h').value)||0);snapshot();Object.assign(solids[selected],{w,d,h,flat:h===0});sync();draw();say('Dimensions updated')};
+$('delete').onclick=()=>{if(selected>=0){snapshot();solids.splice(selected,1);selected=-1;sync();draw();say('Deleted') }};
+$('undo').onclick=()=>{if(history.length){redoStack.push(JSON.stringify(solids));solids=JSON.parse(history.pop());selected=solids.length-1;sync();draw();say('Undo complete')}};
+$('redo').onclick=()=>{if(redoStack.length){history.push(JSON.stringify(solids));solids=JSON.parse(redoStack.pop());selected=solids.length-1;sync();draw();say('Redo complete')}};
+$('save').onclick=()=>{localStorage.setItem('my3d03',JSON.stringify(solids));say('Saved on this browser/device')};
+$('reset').onclick=()=>{yaw=-.65;pitch=.55;zoom=2.1;panX=panY=0;draw();say('Camera reset')};
+let saved=localStorage.getItem('my3d03');if(saved){try{solids=JSON.parse(saved)}catch{}}
+resize();setTool('select');
+</script></body></html>
